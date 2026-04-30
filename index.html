@@ -1,1 +1,707 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VIEW - Puzzle Game</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #f4f1e8;
+            --bg-secondary: #e8e3d6;
+            --accent-primary: #2d5a4a;
+            --accent-secondary: #4a7c5d;
+            --text-primary: #1a1a1a;
+            --text-secondary: #4a4a4a;
+            --door-locked: #8b4513;
+            --door-open: #4a7c5d;
+            --shadow: rgba(45, 90, 74, 0.15);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Space Mono', monospace;
+            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: var(--text-primary);
+            overflow: hidden;
+        }
+
+        .game-container {
+            width: 90%;
+            max-width: 500px;
+            background: var(--bg-primary);
+            border-radius: 20px;
+            box-shadow: 
+                0 20px 60px var(--shadow),
+                inset 0 1px 0 rgba(255, 255, 255, 0.5);
+            padding: 40px;
+            position: relative;
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .title {
+            font-family: 'Courier Prime', monospace;
+            font-size: 2.5em;
+            font-weight: 700;
+            color: var(--accent-primary);
+            letter-spacing: 8px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            animation: glitch 3s infinite;
+        }
+
+        @keyframes glitch {
+            0%, 96%, 100% {
+                text-shadow: 2px 2px 0 var(--accent-secondary);
+            }
+            97% {
+                text-shadow: -2px -2px 0 var(--accent-secondary);
+            }
+            98% {
+                text-shadow: 2px -2px 0 var(--accent-secondary);
+            }
+        }
+
+        .level-info {
+            font-size: 0.9em;
+            color: var(--text-secondary);
+            letter-spacing: 2px;
+        }
+
+        .game-area {
+            background: var(--bg-secondary);
+            border-radius: 15px;
+            padding: 40px;
+            min-height: 300px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .door {
+            width: 120px;
+            height: 180px;
+            background: var(--door-locked);
+            border-radius: 10px;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            border: 3px solid #6b3410;
+        }
+
+        .door:hover {
+            transform: scale(1.05);
+        }
+
+        .door.open {
+            background: var(--door-open);
+            border-color: var(--accent-primary);
+            animation: doorOpen 0.5s ease-out;
+        }
+
+        @keyframes doorOpen {
+            0% { transform: rotateY(0deg); }
+            50% { transform: rotateY(90deg); }
+            100% { transform: rotateY(0deg); }
+        }
+
+        .door-handle {
+            width: 12px;
+            height: 12px;
+            background: #ffd700;
+            border-radius: 50%;
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+        }
+
+        .button {
+            padding: 15px 35px;
+            background: var(--accent-primary);
+            color: var(--bg-primary);
+            border: none;
+            border-radius: 50px;
+            font-family: 'Space Mono', monospace;
+            font-size: 1em;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px var(--shadow);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin: 10px;
+        }
+
+        .button:hover {
+            background: var(--accent-secondary);
+            transform: translateY(-2px);
+            box-shadow: 0 7px 20px var(--shadow);
+        }
+
+        .button:active {
+            transform: translateY(0);
+        }
+
+        .hint {
+            margin-top: 30px;
+            padding: 15px 20px;
+            background: rgba(45, 90, 74, 0.1);
+            border-radius: 10px;
+            font-size: 0.85em;
+            color: var(--text-secondary);
+            text-align: center;
+            border-left: 4px solid var(--accent-primary);
+            opacity: 0;
+            animation: fadeInHint 0.5s ease-out 1s forwards;
+        }
+
+        @keyframes fadeInHint {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .input-field {
+            padding: 12px 20px;
+            font-family: 'Space Mono', monospace;
+            font-size: 1em;
+            border: 2px solid var(--accent-primary);
+            border-radius: 10px;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            margin: 15px 0;
+            text-align: center;
+            letter-spacing: 3px;
+            width: 200px;
+        }
+
+        .input-field:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(45, 90, 74, 0.2);
+        }
+
+        .secret-button {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+        }
+
+        .message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            background: var(--accent-primary);
+            color: var(--bg-primary);
+            padding: 30px 50px;
+            border-radius: 20px;
+            font-size: 1.5em;
+            font-weight: 700;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            letter-spacing: 3px;
+            animation: popIn 0.5s ease-out forwards;
+        }
+
+        @keyframes popIn {
+            0% {
+                transform: translate(-50%, -50%) scale(0);
+            }
+            50% {
+                transform: translate(-50%, -50%) scale(1.1);
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(1);
+            }
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .color-square {
+            width: 60px;
+            height: 60px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px var(--shadow);
+        }
+
+        .color-square:hover {
+            transform: scale(1.1);
+        }
+
+        .timer {
+            font-size: 2em;
+            font-weight: 700;
+            color: var(--accent-primary);
+            letter-spacing: 3px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(45, 90, 74, 0.2);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 20px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--accent-primary);
+            width: 0%;
+            transition: width 0.3s ease;
+            border-radius: 10px;
+        }
+
+        .shake {
+            animation: shake 0.5s ease-in-out;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+
+        .congratulations {
+            text-align: center;
+        }
+
+        .congratulations h2 {
+            font-size: 2em;
+            color: var(--accent-primary);
+            margin-bottom: 20px;
+        }
+
+        .congratulations p {
+            font-size: 1.1em;
+            color: var(--text-secondary);
+            margin-bottom: 30px;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .stat-box {
+            background: var(--bg-secondary);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: 700;
+            color: var(--accent-primary);
+        }
+
+        .stat-label {
+            font-size: 0.8em;
+            color: var(--text-secondary);
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="header">
+            <div class="title">VIEW</div>
+            <div class="level-info">Poziom <span id="levelNumber">1</span>/10</div>
+        </div>
+        <div class="game-area" id="gameArea">
+            <!-- Game content will be dynamically inserted here -->
+        </div>
+    </div>
+
+    <script>
+        const levels = [
+            {
+                // Level 1: Simple button click
+                init: (container) => {
+                    container.innerHTML = `
+                        <div class="door" id="door">
+                            <div class="door-handle"></div>
+                        </div>
+                        <button class="button" id="actionBtn">NACIŚNIJ</button>
+                        <div class="hint">Czasami rozwiązanie jest proste...</div>
+                    `;
+                    document.getElementById('actionBtn').onclick = () => completeLevelWithAnimation();
+                }
+            },
+            {
+                // Level 2: Click door multiple times
+                init: (container) => {
+                    let clicks = 0;
+                    container.innerHTML = `
+                        <div class="door" id="door">
+                            <div class="door-handle"></div>
+                        </div>
+                        <div class="hint">Spróbuj pukać...</div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progress"></div>
+                        </div>
+                    `;
+                    const door = document.getElementById('door');
+                    const progress = document.getElementById('progress');
+                    door.onclick = () => {
+                        clicks++;
+                        progress.style.width = (clicks * 20) + '%';
+                        if (clicks >= 5) {
+                            completeLevelWithAnimation();
+                        }
+                    };
+                }
+            },
+            {
+                // Level 3: Hidden button
+                init: (container) => {
+                    container.innerHTML = `
+                        <div class="door" id="door">
+                            <div class="door-handle"></div>
+                        </div>
+                        <div class="hint">Gdzieś tu musi być przycisk...</div>
+                    `;
+                    const secret = document.createElement('button');
+                    secret.className = 'secret-button';
+                    secret.style.top = '10px';
+                    secret.style.left = '10px';
+                    secret.onclick = () => completeLevelWithAnimation();
+                    container.appendChild(secret);
+                }
+            },
+            {
+                // Level 4: Sequence
+                init: (container) => {
+                    let sequence = [];
+                    const correct = ['red', 'green', 'blue'];
+                    container.innerHTML = `
+                        <div class="door" id="door">
+                            <div class="door-handle"></div>
+                        </div>
+                        <div class="hint">Czerwony → Zielony → Niebieski</div>
+                        <div class="controls">
+                            <div class="color-square" style="background: #c0392b" data-color="red"></div>
+                            <div class="color-square" style="background: #27ae60" data-color="green"></div>
+                            <div class="color-square" style="background: #2980b9" data-color="blue"></div>
+                        </div>
+                    `;
+                    document.querySelectorAll('.color-square').forEach(sq => {
+                        sq.onclick = () => {
+                            sequence.push(sq.dataset.color);
+                            if (sequence.length === 3) {
+                                if (JSON.stringify(sequence) === JSON.stringify(correct)) {
+                                    completeLevelWithAnimation();
+                                } else {
+                                    sequence = [];
+                                    container.classList.add('shake');
+                                    setTimeout(() => container.classList.remove('shake'), 500);
+                                }
+                            }
+                        };
+                    });
+                }
+            },
+            {
+                // Level 5: Type code
+                init: (container) => {
+                    container.innerHTML = `
+                        <div class="door" id="door">
+                            <div class="door-handle"></div>
+                        </div>
+                        <input type="text" class="input-field" id="codeInput" placeholder="KOD">
+                        <div class="hint">Hasło: WIDOK</div>
+                    `;
+                    const input = document.getElementById('codeInput');
+                    input.addEventListener('input', () => {
+                        if (input.value.toUpperCase() === 'WIDOK') {
+                            completeLevelWithAnimation();
+                        }
+                    });
+                }
+            },
+            {
+                // Level 6: Wait timer
+                init: (container) => {
+                    let seconds = 5;
+                    container.innerHTML = `
+                        <div class="door" id="door">
+                            <div class="door-handle"></div>
+                        </div>
+                        <div class="timer" id="timer">${seconds}</div>
+                        <div class="hint">Czasami trzeba poczekać...</div>
+                    `;
+                    const timer = document.getElementById('timer');
+                    const interval = setInterval(() => {
+                        seconds--;
+                        timer.textContent = seconds;
+                        if (seconds === 0) {
+                            clearInterval(interval);
+                            completeLevelWithAnimation();
+                        }
+                    }, 1000);
+                }
+            },
+            {
+                // Level 7: Shake device/mouse movement
+                init: (container) => {
+                    let moves = 0;
+                    container.innerHTML = `
+                        <div class="door" id="door">
+                            <div class="door-handle"></div>
+                        </div>
+                        <div class="hint">Potrząśnij myszką!</div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progress"></div>
+                        </div>
+                    `;
+                    const progress = document.getElementById('progress');
+                    let lastX = 0, lastY = 0;
+                    
+                    const handleMove = (e) => {
+                        const deltaX = Math.abs(e.clientX - lastX);
+                        const deltaY = Math.abs(e.clientY - lastY);
+                        if (deltaX > 10 || deltaY > 10) {
+                            moves++;
+                            progress.style.width = Math.min(moves * 2, 100) + '%';
+                            if (moves >= 50) {
+                                document.removeEventListener('mousemove', handleMove);
+                                completeLevelWithAnimation();
+                            }
+                        }
+                        lastX = e.clientX;
+                        lastY = e.clientY;
+                    };
+                    
+                    document.addEventListener('mousemove', handleMove);
+                }
+            },
+            {
+                // Level 8: Don't click the button
+                init: (container) => {
+                    container.innerHTML = `
+                        <div class="door" id="door">
+                            <div class="door-handle"></div>
+                        </div>
+                        <button class="button" id="dontClick">NIE KLIKAJ!</button>
+                        <div class="hint">Odwrotna psychologia?</div>
+                    `;
+                    document.getElementById('door').onclick = () => completeLevelWithAnimation();
+                    document.getElementById('dontClick').onclick = () => {
+                        container.classList.add('shake');
+                        setTimeout(() => container.classList.remove('shake'), 500);
+                    };
+                }
+            },
+            {
+                // Level 9: Rapid clicks
+                init: (container) => {
+                    let clicks = 0;
+                    let timeLeft = 3;
+                    container.innerHTML = `
+                        <div class="door" id="door">
+                            <div class="door-handle"></div>
+                        </div>
+                        <button class="button" id="rapidBtn">KLIKAJ SZYBKO!</button>
+                        <div class="timer" id="timer">${timeLeft}s</div>
+                        <div class="hint">10 kliknięć w 3 sekundy!</div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progress"></div>
+                        </div>
+                    `;
+                    
+                    const progress = document.getElementById('progress');
+                    const timer = document.getElementById('timer');
+                    const btn = document.getElementById('rapidBtn');
+                    
+                    const interval = setInterval(() => {
+                        timeLeft--;
+                        timer.textContent = timeLeft + 's';
+                        if (timeLeft === 0) {
+                            clearInterval(interval);
+                            container.classList.add('shake');
+                            setTimeout(() => {
+                                clicks = 0;
+                                timeLeft = 3;
+                                progress.style.width = '0%';
+                                timer.textContent = timeLeft + 's';
+                                container.classList.remove('shake');
+                                startTimer();
+                            }, 500);
+                        }
+                    }, 1000);
+                    
+                    function startTimer() {
+                        timeLeft = 3;
+                        const newInterval = setInterval(() => {
+                            timeLeft--;
+                            timer.textContent = timeLeft + 's';
+                            if (timeLeft === 0) {
+                                clearInterval(newInterval);
+                            }
+                        }, 1000);
+                    }
+                    
+                    btn.onclick = () => {
+                        clicks++;
+                        progress.style.width = (clicks * 10) + '%';
+                        if (clicks >= 10) {
+                            clearInterval(interval);
+                            completeLevelWithAnimation();
+                        }
+                    };
+                }
+            },
+            {
+                // Level 10: Final puzzle - combination
+                init: (container) => {
+                    let step = 0;
+                    container.innerHTML = `
+                        <div class="door" id="door">
+                            <div class="door-handle"></div>
+                        </div>
+                        <div class="hint" id="hintText">Krok 1: Naciśnij przycisk</div>
+                        <button class="button" id="step1">START</button>
+                    `;
+                    
+                    document.getElementById('step1').onclick = () => {
+                        step = 1;
+                        container.innerHTML = `
+                            <div class="door" id="door">
+                                <div class="door-handle"></div>
+                            </div>
+                            <div class="hint">Krok 2: Poczekaj 2 sekundy</div>
+                            <div class="timer" id="timer">2</div>
+                        `;
+                        
+                        let time = 2;
+                        const interval = setInterval(() => {
+                            time--;
+                            document.getElementById('timer').textContent = time;
+                            if (time === 0) {
+                                clearInterval(interval);
+                                step = 2;
+                                container.innerHTML = `
+                                    <div class="door" id="door">
+                                        <div class="door-handle"></div>
+                                    </div>
+                                    <div class="hint">Krok 3: Kliknij drzwi</div>
+                                `;
+                                document.getElementById('door').onclick = () => {
+                                    if (step === 2) {
+                                        completeGame();
+                                    }
+                                };
+                            }
+                        }, 1000);
+                    };
+                }
+            }
+        ];
+
+        let currentLevel = 0;
+        let startTime = Date.now();
+
+        function loadLevel(levelIndex) {
+            const container = document.getElementById('gameArea');
+            document.getElementById('levelNumber').textContent = levelIndex + 1;
+            levels[levelIndex].init(container);
+        }
+
+        function completeLevelWithAnimation() {
+            const door = document.getElementById('door');
+            door.classList.add('open');
+            
+            setTimeout(() => {
+                currentLevel++;
+                if (currentLevel < levels.length) {
+                    loadLevel(currentLevel);
+                } else {
+                    completeGame();
+                }
+            }, 800);
+        }
+
+        function completeGame() {
+            const endTime = Date.now();
+            const totalTime = Math.floor((endTime - startTime) / 1000);
+            const minutes = Math.floor(totalTime / 60);
+            const seconds = totalTime % 60;
+            
+            const container = document.getElementById('gameArea');
+            container.innerHTML = `
+                <div class="congratulations">
+                    <h2>🎉 GRATULACJE! 🎉</h2>
+                    <p>Ukończyłeś wszystkie poziomy!</p>
+                    <div class="stats">
+                        <div class="stat-box">
+                            <div class="stat-value">${levels.length}</div>
+                            <div class="stat-label">Poziomów</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-value">${minutes}:${seconds.toString().padStart(2, '0')}</div>
+                            <div class="stat-label">Czas</div>
+                        </div>
+                    </div>
+                    <button class="button" onclick="location.reload()">ZAGRAJ PONOWNIE</button>
+                </div>
+            `;
+        }
+
+        // Start the game
+        loadLevel(0);
+    </script>
+</body>
+</html>
 
