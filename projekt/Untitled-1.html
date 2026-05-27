@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+
+    <style>
+        #gracz {
+            position: fixed;
+            width: 75px;
+            height: 75px;
+            z-index: 10;
+            margin-left: 50%;
+            margin-top: 20%;
+        }
+
+        #wygr {
+            margin-left: 500px;
+            width: 100px;
+            height: 100px;
+            background-color: green;
+        }
+    </style>
+</head>
+<body>
+    
+<div id="gracz">
+        <img id="player-img" src="1.png" alt="standing still">
+    </div>
+
+
+<div id="wygr"></div>
+
+    <script>
+
+        const j = document.getElementById("gracz")
+        const wcisnieteklawisze = {};
+        const wygr = document.getElementById("wygr")
+        const moc = 10;
+        let poziom = 0;
+
+        function nastepny() {
+
+            poziom += 1;
+            console.log("Poziom:", poziom);
+
+        }
+
+        let X = 0;
+        let Y = 0;
+
+        document.addEventListener("keyup", e => {
+            const key = e.key.toLowerCase();
+            if (['w','a','s','d'].includes(key)) {
+                wcisnieteklawisze[key] = false;
+            }
+        });
+
+        document.addEventListener("keydown", e => {
+            const key = e.key.toLowerCase();
+            if (['w','a','s','d'].includes(key)) {
+                wcisnieteklawisze[key] = true;
+            }
+                });
+
+        function ruch(){
+
+            
+
+            if (wcisnieteklawisze['w']) Y -= moc;
+            if (wcisnieteklawisze['s']) Y += moc;
+            if (wcisnieteklawisze['a']) X -= moc;
+            if (wcisnieteklawisze['d']) X += moc;
+
+            j.style.left = `${X}px`;
+            j.style.top = `${Y}px`;
+
+            requestAnimationFrame(ruch); 
+
+            if (kolizja()){
+                nastepny();
+            }
+        }
+
+        function kolizja() {
+            const graczRect = j.getBoundingClientRect();
+            const wygrRect = wygr.getBoundingClientRect();
+            return !(
+                graczRect.right < wygrRect.left ||
+                graczRect.left > wygrRect.right ||
+                graczRect.bottom < wygrRect.top ||
+                graczRect.top > wygrRect.bottom
+
+            )
+        }
+
+        requestAnimationFrame(ruch);
+        nastepny()
+    </script>
+</body>
+</html>
