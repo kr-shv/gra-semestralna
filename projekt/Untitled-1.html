@@ -21,6 +21,20 @@
             height: 100px;
             background-color: green;
         }
+
+        #otw {
+            margin-left: 200px;
+            width: 100px;
+            height: 100px;
+            background-color: rgb(206, 206, 0);
+        }
+
+        #drzwi {
+            margin-left: 500px;
+            width: 100px;
+            height: 100px;
+            background-color: rgb(128, 40, 0);
+        }
     </style>
 </head>
 <body>
@@ -32,12 +46,18 @@
 
 <div id="wygr"></div>
 
+<div id="otw"></div>
+
+<div id="drzwi"></div>
+
     <script>
 
         const j = document.getElementById("gracz")
         const wcisnieteklawisze = {};
         const wygr = document.getElementById("wygr")
-        const moc = 10;
+        const otw = document.getElementById("otw")
+        const drzwi = document.getElementById("drzwi")
+        const moc = 5;
         let poziom = 0;
 
         function nastepny() {
@@ -46,6 +66,16 @@
             console.log("Poziom:", poziom);
 
         }
+
+
+
+        function otworz() {
+
+            drzwi.id = "wygr";
+
+        }
+
+        
 
         let X = 0;
         let Y = 0;
@@ -81,6 +111,10 @@
             if (kolizja()){
                 nastepny();
             }
+
+            if (kolizja2()){
+                otworz();
+            }
         }
 
         function kolizja() {
@@ -91,6 +125,18 @@
                 graczRect.left > wygrRect.right ||
                 graczRect.bottom < wygrRect.top ||
                 graczRect.top > wygrRect.bottom
+
+            )
+        }
+
+        function kolizja2() {
+            const graczRect = j.getBoundingClientRect();
+            const otwRect = otw.getBoundingClientRect();
+            return !(
+                graczRect.right < otwRect.left ||
+                graczRect.left > otwRect.right ||
+                graczRect.bottom < otwRect.top ||
+                graczRect.top > otwRect.bottom
 
             )
         }
