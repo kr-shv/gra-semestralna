@@ -35,6 +35,13 @@
             height: 100px;
             background-color: rgb(128, 40, 0);
         }
+
+        #sciana {
+            margin-left: 700px;
+            width: 100px;
+            height: 100px;
+            background-color: black;
+        }
     </style>
 </head>
 <body>
@@ -50,6 +57,8 @@
 
 <div id="drzwi"></div>
 
+<div id="sciana"></div>
+
     <script>
 
         const j = document.getElementById("gracz")
@@ -57,6 +66,7 @@
         const wygr = document.getElementById("wygr")
         const otw = document.getElementById("otw")
         const drzwi = document.getElementById("drzwi")
+        const sciana = document.getElementById("sciana")
         const moc = 5;
         let poziom = 0;
 
@@ -79,6 +89,7 @@
 
         let X = 0;
         let Y = 0;
+        
 
         document.addEventListener("keyup", e => {
             const key = e.key.toLowerCase();
@@ -96,6 +107,9 @@
 
         function ruch(){
 
+            let stareX = X;
+            let stareY = Y;
+
             
 
             if (wcisnieteklawisze['w']) Y -= moc;
@@ -106,7 +120,7 @@
             j.style.left = `${X}px`;
             j.style.top = `${Y}px`;
 
-            requestAnimationFrame(ruch); 
+            
 
             if (kolizja()){
                 nastepny();
@@ -115,6 +129,15 @@
             if (kolizja2()){
                 otworz();
             }
+
+            if (kolizja3()){
+                X = stareX;
+                Y = stareY;
+                j.style.left = `${X}px`;
+                j.style.top = `${Y}px`;
+            }
+
+            requestAnimationFrame(ruch); 
         }
 
         function kolizja() {
@@ -137,6 +160,18 @@
                 graczRect.left > otwRect.right ||
                 graczRect.bottom < otwRect.top ||
                 graczRect.top > otwRect.bottom
+
+            )
+        }
+
+        function kolizja3() {
+            const graczRect = j.getBoundingClientRect();
+            const scianaRect = sciana.getBoundingClientRect();
+            return !(
+                graczRect.right < scianaRect.left ||
+                graczRect.left > scianaRect.right ||
+                graczRect.bottom < scianaRect.top ||
+                graczRect.top > scianaRect.bottom
 
             )
         }
