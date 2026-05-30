@@ -69,11 +69,14 @@
         const sciana = document.getElementById("sciana")
         const moc = 5;
         let poziom = 0;
+        let otwarte = false;
 
         function nastepny() {
 
             poziom += 1;
             console.log("Poziom:", poziom);
+            otwarte = false;
+            drzwi.id = "drzwi";
 
         }
 
@@ -82,6 +85,7 @@
         function otworz() {
 
             drzwi.id = "wygr";
+            otwarte = true;
 
         }
 
@@ -137,6 +141,17 @@
                 j.style.top = `${Y}px`;
             }
 
+            if (otwarte && kolizja4()){
+                nastepny();
+            }
+
+            if (!otwarte && kolizja4()) {
+                X = stareX;
+                Y = stareY;
+                j.style.left = `${X}px`;
+                j.style.top = `${Y}px`;
+            }
+
             requestAnimationFrame(ruch); 
         }
 
@@ -172,6 +187,18 @@
                 graczRect.left > scianaRect.right ||
                 graczRect.bottom < scianaRect.top ||
                 graczRect.top > scianaRect.bottom
+
+            )
+        }
+
+        function kolizja4() {
+            const graczRect = j.getBoundingClientRect();
+            const drzwiRect = drzwi.getBoundingClientRect();
+            return !(
+                graczRect.right < drzwiRect.left ||
+                graczRect.left > drzwiRect.right ||
+                graczRect.bottom < drzwiRect.top ||
+                graczRect.top > drzwiRect.bottom
 
             )
         }
