@@ -1,210 +1,651 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>VIEW - Escape Puzzle</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 
     <style>
-        #gracz {
+        :root {
+            --bg-dark: #121826;
+            --tile-floor: #e2d7be;
+            --tile-floor-shadow: #c5b89a;
+            --wall-brick: #b33838;
+            --wall-brick-dark: #7a1f1f;
+            --wall-highlight: #e66767;
+            --escapist-blue: #3b5998;
+            --escapist-green: #27ae60;
+            --escapist-red: #e74c3c;
+            --ui-border: #1a1c23;
+            --ui-bg: #2c3e50;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            image-rendering: pixelated;
+        }
+
+        body {
+            font-family: 'Space Mono', monospace;
+            background-color: var(--bg-dark);
+            color: #f4f1e8;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            width: 100vw;
+            position: relative;
+        }
+
+        #main-menu {
+            position: absolute;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background-color: var(--bg-dark);
+            z-index: 200;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.5s ease;
+            background-image: radial-gradient(circle, #1e293b 20%, var(--bg-dark) 80%);
+        }
+
+        .menu-title {
+            font-family: 'Courier Prime', monospace;
+            font-size: 4.5rem;
+            color: #f1c40f;
+            margin-bottom: 40px;
+            text-shadow: 6px 6px 0px var(--ui-border);
+            letter-spacing: 8px;
+            animation: pulseTitle 2s infinite alternate;
+        }
+
+        @keyframes pulseTitle {
+            0% { transform: scale(1); filter: drop-shadow(0 0 10px rgba(241,196,15,0.2)); }
+            100% { transform: scale(1.05); filter: drop-shadow(0 0 20px rgba(241,196,15,0.5)); }
+        }
+
+        .menu-btn {
+            font-family: 'Space Mono', monospace;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #f4f1e8;
+            background-color: var(--ui-bg);
+            border: 4px solid #34495e;
+            outline: 4px solid var(--ui-border);
+            padding: 12px 30px;
+            margin: 15px;
+            cursor: pointer;
+            width: 280px;
+            text-align: center;
+            box-shadow: 0 6px 0 rgba(0,0,0,0.5);
+            text-transform: uppercase;
+            transition: all 0.1s;
+        }
+
+        .menu-btn:hover {
+            background-color: var(--escapist-green);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 0 rgba(0,0,0,0.6);
+        }
+
+        .menu-btn:active {
+            transform: translateY(2px);
+            box-shadow: 0 4px 0 rgba(0,0,0,0.5);
+        }
+
+        #settings-overlay {
+            display: none;
             position: fixed;
-            width: 75px;
-            height: 75px;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0,0,0,0.8);
+            z-index: 300;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .settings-box {
+            background: var(--ui-bg);
+            border: 4px solid #34495e;
+            outline: 6px solid var(--ui-border);
+            padding: 30px;
+            width: 360px;
+            text-align: center;
+            box-shadow: 0 12px 0 rgba(0,0,0,0.6);
+        }
+
+        .setting-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+
+        .toggle-audio-btn {
+            padding: 6px 12px;
+            background: var(--escapist-red);
+            border: 3px solid var(--ui-border);
+            color: white;
+            font-family: 'Space Mono', monospace;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .toggle-audio-btn.on {
+            background: var(--escapist-green);
+        }
+
+        #game-container {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #ui-container {
+            width: 100%;
+            max-width: 800px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            padding: 0 4px;
+        }
+
+        .ui-box {
+            background: var(--ui-bg);
+            border: 4px solid #34495e;
+            outline: 4px solid var(--ui-border);
+            padding: 6px 14px;
+            font-weight: bold;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            box-shadow: 0 6px 0 rgba(0,0,0,0.5);
+        }
+
+        .btn-ui-click {
+            background-color: var(--escapist-green);
+            color: white;
+            cursor: pointer;
+            user-select: none;
+        }
+        .btn-ui-click:active {
+            transform: translateY(2px);
+            box-shadow: 0 4px 0 rgba(0,0,0,0.5);
+        }
+
+        #game-board {
+            position: relative;
+            width: 800px;
+            height: 480px;
+            border: 8px solid var(--ui-border);
+            outline: 4px solid #34495e;
+            box-shadow: 0 16px 0 rgba(0,0,0,0.7);
+            overflow: hidden;
+            background-color: var(--tile-floor);
+            background-image: 
+                linear-gradient(to right, var(--tile-floor-shadow) 3px, transparent 3px),
+                linear-gradient(to bottom, var(--tile-floor-shadow) 3px, transparent 3px);
+            background-size: 40px 40px;
+        }
+
+        .game-object { position: absolute; box-sizing: border-box; }
+
+        .wall {
+            background-color: var(--wall-brick);
+            background-image: 
+                linear-gradient(var(--wall-brick-dark) 4px, transparent 4px),
+                linear-gradient(90deg, var(--wall-brick-dark) 4px, transparent 4px),
+                linear-gradient(var(--wall-highlight) 2px, transparent 2px),
+                linear-gradient(90deg, var(--wall-highlight) 2px, transparent 2px);
+            background-size: 40px 20px, 40px 20px, 40px 20px, 40px 20px;
+            background-position: 0 0, 0 0, 2px 2px, 2px 2px;
+            box-shadow: inset 0 -4px 0 var(--wall-brick-dark), 0 8px 16px rgba(0,0,0,0.5);
+        }
+
+        .interact-glow { outline: 4px dashed #fff; animation: glow 1s infinite alternate; }
+        @keyframes glow { 0% { opacity: 0.6; } 100% { opacity: 1; } }
+
+        #player {
+            width: 44px; 
+            height: 46px;
+            background-image: url('https://art.pixilart.com/d92036c1eedf8f4.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
             z-index: 10;
-            margin-left: 50%;
-            margin-top: 20%;
+            filter: drop-shadow(0px 6px 0px rgba(0,0,0,0.3));
         }
 
-        #wygr {
-            margin-left: 500px;
-            width: 100px;
-            height: 100px;
-            background-color: green;
+        #button-trigger {
+            width: 40px; height: 40px; background: #7f8c8d;
+            border: 4px solid var(--ui-border); border-radius: 6px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; box-shadow: 0 4px 0 rgba(0,0,0,0.3);
+        }
+        #button-trigger::after {
+            content: ''; width: 22px; height: 22px;
+            background: var(--escapist-red); border: 3px solid var(--ui-border);
+            border-radius: 50%; box-shadow: inset 0 -4px 0 rgba(0,0,0,0.4);
+            transition: all 0.1s;
+        }
+        #button-trigger.pressed::after {
+            background: var(--escapist-green); transform: scale(0.85); box-shadow: none;
         }
 
-        #otw {
-            margin-left: 200px;
-            width: 100px;
-            height: 100px;
-            background-color: rgb(206, 206, 0);
+        #door {
+            width: 40px; height: 80px; background-color: #7f8c8d;
+            border: 4px solid var(--ui-border);
+            background-image: repeating-linear-gradient(90deg, transparent, transparent 6px, var(--ui-border) 6px, var(--ui-border) 10px), repeating-linear-gradient(0deg, #95a5a6, #95a5a6 8px, #34495e 8px, #34495e 12px);
+            box-shadow: inset -4px 0 0 rgba(0,0,0,0.3); z-index: 6;
+            transition: opacity 0.2s, transform 0.3s;
+        }
+        #door.open { opacity: 0.15; transform: skewY(15deg) scaleX(0.15); }
+
+        #level-task-text {
+            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+            background: rgba(26, 28, 35, 0.9); padding: 8px 20px; border-radius: 6px;
+            font-size: 0.9rem; color: #fff; pointer-events: none;
+            text-align: center; max-width: 85%; z-index: 20; border: 3px solid #34495e;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
         }
 
-        #drzwi {
-            margin-left: 500px;
-            width: 100px;
-            height: 100px;
-            background-color: rgb(128, 40, 0);
+        #hint-modal, #input-modal {
+            display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: var(--ui-bg); border: 4px solid #34495e; outline: 6px solid var(--ui-border);
+            padding: 24px; z-index: 100; box-shadow: 0 12px 0 rgba(0,0,0,0.6); text-align: center; width: 380px;
+        }
+        #input-modal input {
+            font-family: 'Space Mono', monospace; width: 100%; padding: 8px; margin: 16px 0;
+            background: var(--bg-dark); border: 4px solid #34495e; color: #fff; outline: none;
+            text-align: center; font-size: 1.2rem; letter-spacing: 2px;
+        }
+        #input-modal button, #hint-modal button {
+            font-family: 'Space Mono', monospace; padding: 8px 16px; background: var(--escapist-green);
+            color: white; border: 4px solid var(--ui-border); cursor: pointer; font-weight: bold;
         }
 
-        #sciana {
-            margin-left: 700px;
-            width: 100px;
-            height: 100px;
-            background-color: black;
-        }
+        .level-passed { animation: levelPassedFlash 0.4s ease-out; }
+        @keyframes levelPassedFlash { 0% { filter: brightness(1); } 50% { filter: brightness(1.5) saturate(1.5); } 100% { filter: brightness(1); } }
     </style>
 </head>
 <body>
-    
-<div id="gracz">
-        <img id="player-img" src="1.png" alt="standing still">
+
+    <div id="main-menu">
+        <div class="menu-title">VIEW: ESCAPE</div>
+        <button class="menu-btn" onclick="startGame()">Rozpocznij Grę</button>
+        <button class="menu-btn" onclick="openSettings()">Ustawienia</button>
     </div>
 
+    <div id="settings-overlay">
+        <div class="settings-box">
+            <h3 style="margin-bottom: 20px; text-transform: uppercase; color: #f1c40f;">Ustawienia</h3>
+            <div class="setting-row">
+                <span>Muzyka Chiptune:</span>
+                <button id="music-toggle-btn" class="toggle-audio-btn on" onclick="toggleMusic()">WŁ.</button>
+            </div>
+            <button class="menu-btn" style="width:100%; margin: 20px 0 0 0; padding:8px;" onclick="closeSettings()">Powrót</button>
+        </div>
+    </div>
 
-<div id="wygr"></div>
+    <div id="game-container">
+        <div id="ui-container">
+            <div class="ui-box" id="lvl-display">CELA: 01/10</div>
+            <div class="ui-box" id="timer-display">TIME: 00:00</div>
+            <div class="ui-box btn-ui-click" id="btn-hint" onclick="toggleHint()">PODPOWIEDŹ</div>
+        </div>
 
-<div id="otw"></div>
+        <div id="game-board">
+            <div id="player" class="game-object"></div>
+            <div id="door" class="game-object" style="top: 200px; left: 720px;"></div>
+            <div id="button-trigger" class="game-object" style="top: 220px; left: 120px;"></div>
+            
+            <div class="game-object wall" style="top: 0; left: 0; width: 800px; height: 40px;"></div>
+            <div class="game-object wall" style="top: 440px; left: 0; width: 800px; height: 40px;"></div>
+            <div class="game-object wall" style="top: 40px; left: 0; width: 40px; height: 400px;"></div>
+            <div class="game-object wall" style="top: 40px; left: 760px; width: 40px; height: 400px;"></div>
 
-<div id="drzwi"></div>
+            <div id="level-task-text">Analiza celi...</div>
+        </div>
+    </div>
 
-<div id="sciana"></div>
+    <div id="input-modal">
+        <p id="input-label">Wprowadź kod:</p>
+        <input type="text" id="password-input" autocomplete="off" placeholder="...">
+        <button onclick="checkPassword()">Zatwierdź</button>
+    </div>
+
+    <div id="hint-modal">
+        <h3 style="color:var(--escapist-green); margin-bottom:8px;">LOG SYSTEMOWY:</h3>
+        <p id="hint-text">-</p>
+        <button onclick="toggleHint()" style="margin-top:16px;">Powrót</button>
+    </div>
 
     <script>
+        let audioCtx = null;
+        let isMusicPlaying = true;
+        let loopTimeout = null;
+        let currentTrack = "menu"; 
+        let stepIndex = 0;
 
-        const j = document.getElementById("gracz")
-        const wcisnieteklawisze = {};
-        const wygr = document.getElementById("wygr")
-        const otw = document.getElementById("otw")
-        const drzwi = document.getElementById("drzwi")
-        const sciana = document.getElementById("sciana")
-        const moc = 5;
-        let poziom = 0;
-        let otwarte = false;
+        const menuMelody = [
+            130.81, 196.00, 164.81, 196.00, 146.83, 220.00, 174.61, 220.00,
+            164.81, 261.63, 196.00, 261.63, 146.83, 220.00, 130.81, 196.00,
+            110.00, 164.81, 130.81, 164.81, 116.54, 174.61, 138.59, 174.61,
+            130.81, 196.00, 164.81, 196.00, 196.00, 293.66, 246.94, 392.00
+        ];
 
-        function nastepny() {
+        const gameMelody = [
+            146.83, 220.00, 164.81, 220.00, 174.61, 261.63, 196.00, 293.66,
+            174.61, 261.63, 164.81, 220.00, 146.83, 196.00, 146.83, 130.81,
+            164.81, 220.00, 196.00, 261.63, 220.00, 329.63, 196.00, 261.63,
+            174.61, 220.00, 164.81, 196.00, 146.83, 174.61, 130.81, 146.83
+        ];
 
-            poziom += 1;
-            console.log("Poziom:", poziom);
-            otwarte = false;
-            drzwi.id = "drzwi";
-
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                playAudioEngine();
+            }
         }
 
+        function playAudioEngine() {
+            if (!isMusicPlaying || !audioCtx) return;
 
+            const melody = currentTrack === "menu" ? menuMelody : gameMelody;
+            const duration = currentTrack === "menu" ? 0.28 : 0.22;
 
-        function otworz() {
+            let osc = audioCtx.createOscillator();
+            let gainNode = audioCtx.createGain();
 
-            drzwi.id = "wygr";
-            otwarte = true;
+            osc.type = currentTrack === "menu" ? "triangle" : "square";
+            osc.frequency.setValueAtTime(melody[stepIndex], audioCtx.currentTime);
 
+            const volume = currentTrack === "menu" ? 0.05 : 0.025;
+            gainNode.gain.setValueAtTime(volume, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration - 0.02);
+
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+
+            stepIndex = (stepIndex + 1) % melody.length;
+            loopTimeout = setTimeout(playAudioEngine, duration * 1000);
         }
 
-        
+        function playLevelWinSound() {
+            if (!isMusicPlaying || !audioCtx) return;
+            const now = audioCtx.currentTime;
+            const notes = [261.63, 329.63, 392.00, 523.25];
+            
+            notes.forEach((freq, idx) => {
+                let osc = audioCtx.createOscillator();
+                let gainNode = audioCtx.createGain();
+                
+                osc.type = "sine";
+                osc.frequency.setValueAtTime(freq, now + idx * 0.06);
+                
+                gainNode.gain.setValueAtTime(0.05, now + idx * 0.06);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.06 + 0.3);
+                
+                osc.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                osc.start(now + idx * 0.06);
+                osc.stop(now + idx * 0.06 + 0.3);
+            });
+        }
 
-        let X = 0;
-        let Y = 0;
-        
+        function switchTrack(trackName) {
+            currentTrack = trackName;
+            stepIndex = 0;
+            if (audioCtx && isMusicPlaying) {
+                clearTimeout(loopTimeout);
+                playAudioEngine();
+            }
+        }
 
-        document.addEventListener("keyup", e => {
-            const key = e.key.toLowerCase();
-            if (['w','a','s','d'].includes(key)) {
-                wcisnieteklawisze[key] = false;
+        function startGame() {
+            initAudio();
+            switchTrack("game");
+            document.getElementById("main-menu").style.opacity = "0";
+            setTimeout(() => {
+                document.getElementById("main-menu").style.display = "none";
+                document.getElementById("game-container").style.display = "flex";
+                startMainTimer();
+            }, 500);
+        }
+
+        function openSettings() { document.getElementById("settings-overlay").style.display = "flex"; }
+        function closeSettings() { document.getElementById("settings-overlay").style.display = "none"; }
+
+        function toggleMusic() {
+            isMusicPlaying = !isMusicPlaying;
+            const btn = document.getElementById("music-toggle-btn");
+            if (isMusicPlaying) {
+                btn.innerText = "WŁ.";
+                btn.classList.add("on");
+                if (audioCtx) playAudioEngine();
+            } else {
+                btn.innerText = "WYŁ.";
+                btn.classList.remove("on");
+                clearTimeout(loopTimeout);
+            }
+        }
+
+        window.addEventListener("DOMContentLoaded", () => {
+            document.body.addEventListener("click", () => { initAudio(); }, { once: true });
+        });
+
+        const playerEl = document.getElementById("player");
+        const doorEl = document.getElementById("door");
+        const btnEl = document.getElementById("button-trigger");
+        const boardEl = document.getElementById("game-board");
+        const lvlDisplay = document.getElementById("lvl-display");
+        const timerDisplay = document.getElementById("timer-display");
+        const hintText = document.getElementById("hint-text");
+        const hintModal = document.getElementById("hint-modal");
+        const inputModal = document.getElementById("input-modal");
+        const passInput = document.getElementById("password-input");
+        const taskText = document.getElementById("level-task-text");
+        const inputLabel = document.getElementById("input-label");
+
+        let currentLevel = 1;
+        let doorOpen = false;
+        let gameTime = 0;
+        let timerInterval;
+
+        let playerX = 200;
+        let playerY = 220;
+        const playerWidth = 44;
+        const playerHeight = 46;
+        const playerSpeed = 4;
+        const keysPressed = {};
+
+        let walkFramesCounter = 0;
+        let isFlipped = false;
+
+        let lvl2_clicks = 0;
+        let lvl3_step_on_btn = false;
+        let lvl5_timer = null;
+        let lvl5_seconds = 0;
+        let lvl7_clicks = 0;
+        let lvl9_interacted = { btn: false, door: false };
+
+        const levels = {
+            1: { task: "System zasilania aktywny. Przetestuj przełącznik podłogowy.", hint: "Stań postacią bezpośrednio na czerwonym przycisku po lewej stronie pokoju.", init: () => {} },
+            2: { task: "Przycisk reaguje tylko na nacisk fizyczny dłoni (kliknięcie myszą).", hint: "Przycisk podłogowy nie reaguje na ciężar ciała postaci. Musisz kliknąć na niego bezpośrednio lewym przyciskiem myszy.", init: () => {} },
+            3: { task: "Zabezpieczenie ryglowe. Drzwi otwierają się tylko wtedy, gdy ktoś jednocześnie STOI na przycisku.", hint: "Musisz zaparkować postać na przycisku podłogowym (wtedy drzwi się otwierają), a następnie... kliknąć myszką na otwarte drzwi, aby przejść do kolejnej celi!", init: () => {} },
+            4: { task: "Awaria elektroniki. Przycisk zmienił polaryzację i działa na odwrót.", hint: "Drzwi są otwarte domyślnie. Jeśli wejdziesz na przycisk, zamkniesz je. Omiń przycisk szerokim łukiem i idź prosto do drzwi.", init: () => { openDoor(); } },
+            5: { task: "Mechanizm zamka potrzebuje czasu na naładowanie po wciśnięciu przycisku.", hint: "Stań na przycisku i poczekaj na nim nieruchomo przez pełne 3 sekundy. Usłyszysz zwolnienie blokady.", init: () => {} },
+            6: { task: "Zamek zablokowany. Drzwi wymagają podania kodu z raportu porannego.", hint: "Kliknij myszką bezpośrednio na drzwi. Pojawi się okno terminala. Kod to numer tej celi, czyli: CELA 06 (lub wpisz po prostu 06).", init: () => {} },
+            7: { task: "Zabezpieczenie dynamiczne: Impuls magnetyczny wymaga podwójnego sygnału.", hint: "Szybkie, podwójne kliknięcie (double-click) myszką na przycisk podłogowy otworzy zamek.", init: () => {} },
+            8: { task: "Wykryto sabotaż okablowania. Prawdziwy włącznik został odcięty i przeniesiony na ścianę.", hint: "Klikaj myszką na kafelki ścian wokół pokoju. Jeden z nich (górna ściana, blisko środka) skrywa schowaną dźwignię. Kliknij go!", init: () => { document.querySelectorAll('.wall')[0].classList.add('interact-glow'); } },
+            9: { task: "Procedura pełnego resetu. Wymagane manualne sprawdzenie obu punktów kontrolnych.", hint: "Podejdź postacią i dotknij najpierw przycisku podłogowego, a następnie wróć i dotknij zamkniętych drzwi.", init: () => {} },
+            10: { task: "Ostatnia prosta. Wszystkie systemy spięte w jeden ciąg logiczny.", hint: "Połącz kropki: Kliknij na ukrytą dźwignię na ścianie (z poziomu 8), otworzy to terminal w drzwiach. Kliknij drzwi i wpisz hasło: ESCAPE.", init: () => { document.querySelectorAll('.wall')[0].classList.add('interact-glow'); } }
+        };
+
+        const walls = [
+            { x: 0, y: 0, w: 800, h: 40 }, { x: 0, y: 440, w: 800, h: 40 },
+            { x: 0, y: 40, w: 40, h: 400 }, { x: 760, y: 40, w: 40, h: 400 }
+        ];
+
+        window.addEventListener("keydown", e => { keysPressed[e.key.toLowerCase()] = true; });
+        window.addEventListener("keyup", e => { keysPressed[e.key.toLowerCase()] = false; });
+
+        btnEl.addEventListener("click", () => {
+            if (currentLevel === 2) { btnEl.classList.add("pressed"); openDoor(); }
+            if (currentLevel === 7) {
+                lvl7_clicks++; btnEl.classList.add("pressed");
+                setTimeout(() => btnEl.classList.remove("pressed"), 150);
+                if (lvl7_clicks >= 2) openDoor();
             }
         });
 
-        document.addEventListener("keydown", e => {
-            const key = e.key.toLowerCase();
-            if (['w','a','s','d'].includes(key)) {
-                wcisnieteklawisze[key] = true;
-            }
-                });
+        doorEl.addEventListener("click", () => {
+            if (currentLevel === 3 && lvl3_step_on_btn) nextLevel();
+            if (currentLevel === 6) { inputLabel.innerText = "Podaj numer obecnej celi (dwucyfrowo):"; inputModal.style.display = "block"; }
+            if (currentLevel === 10 && doorOpen) { inputLabel.innerText = "Terminal ewakuacyjny. Podaj hasło:"; inputModal.style.display = "block"; }
+        });
 
-        function ruch(){
+        document.querySelectorAll('.wall').forEach((wallObj, index) => {
+            wallObj.addEventListener('click', (e) => {
+                const rect = wallObj.getBoundingClientRect();
+                const clickX = e.clientX - rect.left;
+                if (index === 0 && clickX > 300 && clickX < 500) {
+                    if (currentLevel === 8) { wallObj.style.backgroundColor = "var(--escapist-green)"; openDoor(); }
+                    if (currentLevel === 10) { wallObj.style.backgroundColor = "var(--escapist-green)"; doorOpen = true; taskText.innerText = "Terminal w drzwiach aktywny. Kliknij na drzwi."; }
+                }
+            });
+        });
 
-            let stareX = X;
-            let stareY = Y;
-
-            
-
-            if (wcisnieteklawisze['w']) Y -= moc;
-            if (wcisnieteklawisze['s']) Y += moc;
-            if (wcisnieteklawisze['a']) X -= moc;
-            if (wcisnieteklawisze['d']) X += moc;
-
-            j.style.left = `${X}px`;
-            j.style.top = `${Y}px`;
-
-            
-
-            if (kolizja()){
-                nastepny();
-            }
-
-            if (kolizja2()){
-                otworz();
-            }
-
-            if (kolizja3()){
-                X = stareX;
-                Y = stareY;
-                j.style.left = `${X}px`;
-                j.style.top = `${Y}px`;
-            }
-
-            if (otwarte && kolizja4()){
-                nastepny();
-            }
-
-            if (!otwarte && kolizja4()) {
-                X = stareX;
-                Y = stareY;
-                j.style.left = `${X}px`;
-                j.style.top = `${Y}px`;
-            }
-
-            requestAnimationFrame(ruch); 
+        function checkPassword() {
+            const val = passInput.value.trim().toUpperCase();
+            if (currentLevel === 6 && (val === "06" || val === "CELA 06")) { inputModal.style.display = "none"; openDoor(); }
+            else if (currentLevel === 10 && val === "ESCAPE") { inputModal.style.display = "none"; currentLevel = 10; doorOpen = true; nextLevel(); }
+            else { alert("ODMOWA DOSTĘPU."); }
         }
 
-        function kolizja() {
-            const graczRect = j.getBoundingClientRect();
-            const wygrRect = wygr.getBoundingClientRect();
-            return !(
-                graczRect.right < wygrRect.left ||
-                graczRect.left > wygrRect.right ||
-                graczRect.bottom < wygrRect.top ||
-                graczRect.top > wygrRect.bottom
+        function openDoor() { doorOpen = true; doorEl.classList.add("open"); }
+        function closeDoor() { doorOpen = false; doorEl.classList.remove("open"); }
 
-            )
+        function updateGame() {
+            let oldX = playerX; let oldY = playerY;
+            let isMoving = false;
+
+            if (keysPressed['w']) { playerY -= playerSpeed; isMoving = true; }
+            if (keysPressed['s']) { playerY += playerSpeed; isMoving = true; }
+            if (keysPressed['a']) { playerX -= playerSpeed; isMoving = true; }
+            if (keysPressed['d']) { playerX += playerSpeed; isMoving = true; }
+
+            if (isMoving) {
+                walkFramesCounter++;
+                if (walkFramesCounter >= 9) { 
+                    isFlipped = !isFlipped;
+                    walkFramesCounter = 0;
+                }
+                playerEl.style.transform = isFlipped ? "scaleX(-1)" : "scaleX(1)";
+            } else {
+                playerEl.style.transform = "scaleX(1)";
+                walkFramesCounter = 0;
+                isFlipped = false;
+            }
+
+            const playerRect = { x: playerX, y: playerY, w: playerWidth, h: playerHeight };
+            for (let wall of walls) {
+                if (checkCollision(playerRect, wall)) { playerX = oldX; playerY = oldY; break; }
+            }
+
+            const btnRect = { x: 120, y: 220, w: 40, h: 40 };
+            const isStandingOnButton = checkCollision(playerRect, btnRect);
+
+            if (isStandingOnButton) {
+                if (currentLevel === 1) { btnEl.classList.add("pressed"); openDoor(); }
+                if (currentLevel === 3) { btnEl.classList.add("pressed"); openDoor(); lvl3_step_on_btn = true; }
+                if (currentLevel === 4) { btnEl.classList.add("pressed"); closeDoor(); }
+                if (currentLevel === 5) {
+                    btnEl.classList.add("pressed");
+                    if (!lvl5_timer) {
+                        lvl5_timer = setInterval(() => {
+                            lvl5_seconds++;
+                            taskText.innerText = `Ładowanie magnetyczne: ${lvl5_seconds}/3s`;
+                            if (lvl5_seconds >= 3) { openDoor(); clearInterval(lvl5_timer); }
+                        }, 1000);
+                    }
+                }
+                if (currentLevel === 9 && !lvl9_interacted.btn) { lvl9_interacted.btn = true; btnEl.classList.add("pressed"); taskText.innerText = "Punkt 1/2 zaliczony. Teraz zbadaj drzwi."; }
+            } else {
+                if (currentLevel === 3) { btnEl.classList.remove("pressed"); closeDoor(); lvl3_step_on_btn = false; }
+                if (currentLevel === 4) { btnEl.classList.remove("pressed"); openDoor(); }
+                if (currentLevel === 5 && lvl5_timer) {
+                    clearInterval(lvl5_timer); lvl5_timer = null; lvl5_seconds = 0; taskText.innerText = levels[5].task;
+                }
+            }
+
+            const doorRect = { x: 720, y: 200, w: 40, h: 80 };
+            if (checkCollision(playerRect, doorRect)) {
+                if (currentLevel === 9 && lvl9_interacted.btn) openDoor();
+                if (doorOpen && currentLevel !== 3) nextLevel();
+                else { playerX = oldX; playerY = oldY; }
+            }
+
+            playerEl.style.left = `${playerX}px`; playerEl.style.top = `${playerY}px`;
+            requestAnimationFrame(updateGame);
         }
 
-        function kolizja2() {
-            const graczRect = j.getBoundingClientRect();
-            const otwRect = otw.getBoundingClientRect();
-            return !(
-                graczRect.right < otwRect.left ||
-                graczRect.left > otwRect.right ||
-                graczRect.bottom < otwRect.top ||
-                graczRect.top > otwRect.bottom
+        function checkCollision(r1, r2) { return (r1.x < r2.x + r2.w && r1.x + r1.w > r2.x && r1.y < r2.y + r2.h && r1.y + r1.h > r2.y); }
 
-            )
+        function nextLevel() {
+            playLevelWinSound();
+            boardEl.classList.add("level-passed");
+            setTimeout(() => boardEl.classList.remove("level-passed"), 400);
+
+            if (currentLevel < 10) { currentLevel++; resetLevelState(); }
+            else {
+                clearInterval(timerInterval);
+                alert(`GENIALNA UCIECZKA!\nUdało Ci się przechytrzyć system zabezpieczeń VIEW!\nTwój czas końcowy: ${timerDisplay.innerText.split(' ')[1]}`);
+                currentLevel = 1; gameTime = 0; switchTrack("menu"); resetLevelState();
+                document.getElementById("main-menu").style.display = "flex";
+                document.getElementById("main-menu").style.opacity = "1";
+                document.getElementById("game-container").style.display = "none";
+            }
         }
 
-        function kolizja3() {
-            const graczRect = j.getBoundingClientRect();
-            const scianaRect = sciana.getBoundingClientRect();
-            return !(
-                graczRect.right < scianaRect.left ||
-                graczRect.left > scianaRect.right ||
-                graczRect.bottom < scianaRect.top ||
-                graczRect.top > scianaRect.bottom
+        function resetLevelState() {
+            playerX = 220; playerY = 220; closeDoor(); btnEl.classList.remove("pressed");
+            inputModal.style.display = "none"; passInput.value = "";
+            if (lvl5_timer) { clearInterval(lvl5_timer); lvl5_timer = null; }
+            lvl2_clicks = 0; lvl3_step_on_btn = false; lvl5_seconds = 0; lvl7_clicks = 0; lvl9_interacted = { btn: false, door: false };
 
-            )
+            document.querySelectorAll('.wall').forEach(w => { w.style.backgroundColor = "var(--wall-brick)"; w.classList.remove('interact-glow'); });
+            lvlDisplay.innerText = `CELA: ${String(currentLevel).padStart(2, '0')}/10`;
+            taskText.innerText = levels[currentLevel].task; hintText.innerText = levels[currentLevel].hint;
+            levels[currentLevel].init();
         }
 
-        function kolizja4() {
-            const graczRect = j.getBoundingClientRect();
-            const drzwiRect = drzwi.getBoundingClientRect();
-            return !(
-                graczRect.right < drzwiRect.left ||
-                graczRect.left > drzwiRect.right ||
-                graczRect.bottom < drzwiRect.top ||
-                graczRect.top > drzwiRect.bottom
+        function toggleHint() { hintModal.style.display = hintModal.style.display === "block" ? "none" : "block"; }
 
-            )
+        function startMainTimer() {
+            gameTime = 0;
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                gameTime++;
+                const m = String(Math.floor(gameTime / 60)).padStart(2, '0');
+                const s = String(gameTime % 60).padStart(2, '0');
+                timerDisplay.innerText = `TIME: ${m}:${s}`;
+            }, 1000);
         }
 
-        requestAnimationFrame(ruch);
-        nastepny()
+        resetLevelState();
+        requestAnimationFrame(updateGame);
     </script>
 </body>
 </html>
