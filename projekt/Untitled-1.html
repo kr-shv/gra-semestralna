@@ -272,6 +272,10 @@
             color: white; border: 4px solid var(--ui-border); cursor: pointer; font-weight: bold;
         }
 
+        .color-btn {
+            width: 40px; height: 40px; border: 4px solid var(--ui-border); cursor: pointer; display: none; z-index: 8; box-shadow: 0 4px 0 rgba(0,0,0,0.3);
+        }
+
         .level-passed { animation: levelPassedFlash 0.4s ease-out; }
         @keyframes levelPassedFlash { 0% { filter: brightness(1); } 50% { filter: brightness(1.5) saturate(1.5); } 100% { filter: brightness(1); } }
     </style>
@@ -306,6 +310,10 @@
             <div id="player" class="game-object"></div>
             <div id="door" class="game-object" style="top: 200px; left: 720px;"></div>
             <div id="button-trigger" class="game-object" style="top: 220px; left: 120px;"></div>
+
+            <div id="c-red" class="game-object color-btn" style="top: 100px; left: 300px; background: var(--escapist-red);"></div>
+            <div id="c-green" class="game-object color-btn" style="top: 100px; left: 380px; background: var(--escapist-green);"></div>
+            <div id="c-blue" class="game-object color-btn" style="top: 100px; left: 460px; background: #2980b9;"></div>
             
             <div class="game-object wall" style="top: 0; left: 0; width: 800px; height: 40px;"></div>
             <div class="game-object wall" style="top: 440px; left: 0; width: 800px; height: 40px;"></div>
@@ -473,24 +481,35 @@
         let walkFramesCounter = 0;
         let isFlipped = false;
 
-        let lvl2_clicks = 0;
-        let lvl3_step_on_btn = false;
-        let lvl5_timer = null;
-        let lvl5_seconds = 0;
-        let lvl7_clicks = 0;
-        let lvl9_interacted = { btn: false, door: false };
+        let lvl2_door_knocks = 0;
+        let lvl3_hidden_active = false;
+        let lvl4_sequence = [];
+        let lvl6_timer = null;
+        let lvl6_seconds = 0;
+        let lvl7_shake_score = 0;
+        let lvl9_clicks = 0;
+        let lvl9_active = false;
+        let lvl9_timer = null;
+        let lvl10_stage = 0;
 
         const levels = {
-            1: { task: "System zasilania aktywny. Przetestuj przełącznik podłogowy.", hint: "Stań postacią bezpośrednio na czerwonym przycisku po lewej stronie pokoju.", init: () => {} },
-            2: { task: "Przycisk reaguje tylko na nacisk fizyczny dłoni (kliknięcie myszą).", hint: "Przycisk podłogowy nie reaguje na ciężar ciała postaci. Musisz kliknąć na niego bezpośrednio lewym przyciskiem myszy.", init: () => {} },
-            3: { task: "Zabezpieczenie ryglowe. Drzwi otwierają się tylko wtedy, gdy ktoś jednocześnie STOI na przycisku.", hint: "Musisz zaparkować postać na przycisku podłogowym (wtedy drzwi się otwierają), a następnie... kliknąć myszką na otwarte drzwi, aby przejść do kolejnej celi!", init: () => {} },
-            4: { task: "Awaria elektroniki. Przycisk zmienił polaryzację i działa na odwrót.", hint: "Drzwi są otwarte domyślnie. Jeśli wejdziesz na przycisk, zamkniesz je. Omiń przycisk szerokim łukiem i idź prosto do drzwi.", init: () => { openDoor(); } },
-            5: { task: "Mechanizm zamka potrzebuje czasu na naładowanie po wciśnięciu przycisku.", hint: "Stań na przycisku i poczekaj na nim nieruchomo przez pełne 3 sekundy. Usłyszysz zwolnienie blokady.", init: () => {} },
-            6: { task: "Zamek zablokowany. Drzwi wymagają podania kodu z raportu porannego.", hint: "Kliknij myszką bezpośrednio na drzwi. Pojawi się okno terminala. Kod to numer tej celi, czyli: CELA 06 (lub wpisz po prostu 06).", init: () => {} },
-            7: { task: "Zabezpieczenie dynamiczne: Impuls magnetyczny wymaga podwójnego sygnału.", hint: "Szybkie, podwójne kliknięcie (double-click) myszką na przycisk podłogowy otworzy zamek.", init: () => {} },
-            8: { task: "Wykryto sabotaż okablowania. Prawdziwy włącznik został odcięty i przeniesiony na ścianę.", hint: "Klikaj myszką na kafelki ścian wokół pokoju. Jeden z nich (górna ściana, blisko środka) skrywa schowaną dźwignię. Kliknij go!", init: () => { document.querySelectorAll('.wall')[0].classList.add('interact-glow'); } },
-            9: { task: "Procedura pełnego resetu. Wymagane manualne sprawdzenie obu punktów kontrolnych.", hint: "Podejdź postacią i dotknij najpierw przycisku podłogowego, a następnie wróć i dotknij zamkniętych drzwi.", init: () => {} },
-            10: { task: "Ostatnia prosta. Wszystkie systemy spięte w jeden ciąg logiczny.", hint: "Połącz kropki: Kliknij na ukrytą dźwignię na ścianie (z poziomu 8), otworzy to terminal w drzwiach. Kliknij drzwi i wpisz hasło: ESCAPE.", init: () => { document.querySelectorAll('.wall')[0].classList.add('interact-glow'); } }
+            1: { task: "Poziom 1: Kliknij myszką na przycisk podłogowy po lewej stronie.", hint: "Użyj myszki i kliknij czerwony okrąg.", init: () => { btnEl.style.display = "flex"; } },
+            2: { task: "Poziom 2: Wykryto blokadę ryglową drzwi. Popukaj w nie mocno (5x).", hint: "Kliknij myszką bezpośrednio na drzwi dokładnie 5 razy.", init: () => { btnEl.style.display = "none"; } },
+            3: { task: "Poziom 3: Brak widocznego sterownika. Przeszukaj ściany pomieszczenia.", hint: "Klikaj po kafelkach ścian. Jeden z nich aktywuje ukryty przełącznik.", init: () => {} },
+            4: { task: "Poziom 4: Wprowadź sekwencję kolorów: Czerwony -> Zielony -> Niebieski.", hint: "Klikaj kwadraty na środku w podanej kolejności.", init: () => { document.querySelectorAll('.color-btn').forEach(b => b.style.display = "block"); } },
+            5: { task: "Poziom 5: Terminal wymaga autoryzacji tekstowej. Kliknij na drzwi.", hint: "Kliknij drzwi i wprowadź hasło, które rzuca się w oczy: VIEW", init: () => { document.querySelectorAll('.color-btn').forEach(b => b.style.display = "none"); } },
+            6: { task: "Poziom 6: System przeciążony. Zachowaj absolutną cierpliwość przez 5 sekund.", hint: "Nie ruszaj się i nic nie klikaj. Poczekaj na odliczenie zegara.", init: () => {
+                lvl6_seconds = 5;
+                lvl6_timer = setInterval(() => {
+                    lvl6_seconds--;
+                    taskText.innerText = `Poziom 6: Oczekiwanie na reset systemowy... (${lvl6_seconds}s)`;
+                    if (lvl6_seconds <= 0) { clearInterval(lvl6_timer); openDoor(); taskText.innerText = "Zabezpieczenie czasowe zdjęte. Ruszaj do drzwi!"; }
+                }, 1000);
+            }},
+            7: { task: "Poziom 7: Generator magnetyczny zawieszony. Potrząśnij matrycą planszy.", hint: "Szybko machaj wskaźnikiem myszy w lewo i w prawo nad obszarem gry.", init: () => {} },
+            8: { task: "Poziom 8: System pułapek aktywny. Pod żadnym pozorem NIE klikaj przycisku!", hint: "Przycisk to pułapka. Drzwi są już otwarte, omiń przycisk i po prostu do nich podejdź.", init: () => { btnEl.style.display = "flex"; openDoor(); } },
+            9: { task: "Poziom 9: Przełam barierę energetyczną: Kliknij przycisk 10 razy w 3 sekundy!", hint: "Kliknij przycisk raz, aby zacząć odliczanie, a potem klikaj jak najszybciej!", init: () => { btnEl.style.display = "flex"; closeDoor(); } },
+            10: { task: "Poziom 10: Finał. Krok 1: Wprowadź kod kolorów (Czerwony -> Zielony -> Niebieski).", hint: "Połącz poznane mechaniki. Najpierw kolory, potem potrząsaj myszką, na końcu kliknij drzwi i wpisz hasło ESCAPE.", init: () => { btnEl.style.display = "none"; document.querySelectorAll('.color-btn').forEach(b => b.style.display = "block"); } }
         };
 
         const walls = [
@@ -501,37 +520,93 @@
         window.addEventListener("keydown", e => { keysPressed[e.key.toLowerCase()] = true; });
         window.addEventListener("keyup", e => { keysPressed[e.key.toLowerCase()] = false; });
 
+        boardEl.addEventListener("mousemove", () => {
+            if (currentLevel === 7 && !doorOpen) {
+                lvl7_shake_score++;
+                if (lvl7_shake_score > 120) openDoor();
+            }
+            if (currentLevel === 10 && lvl10_stage === 1) {
+                lvl7_shake_score++;
+                if (lvl7_shake_score > 120) {
+                    lvl10_stage = 2;
+                    taskText.innerText = "Poziom 10: Krok 3: Kliknij drzwi i wprowadź ostateczny protokół.";
+                }
+            }
+        });
+
         btnEl.addEventListener("click", () => {
-            if (currentLevel === 2) { btnEl.classList.add("pressed"); openDoor(); }
-            if (currentLevel === 7) {
-                lvl7_clicks++; btnEl.classList.add("pressed");
-                setTimeout(() => btnEl.classList.remove("pressed"), 150);
-                if (lvl7_clicks >= 2) openDoor();
+            if (currentLevel === 1) { btnEl.classList.add("pressed"); openDoor(); }
+            if (currentLevel === 8) { btnEl.classList.add("pressed"); closeDoor(); currentLevel = 8; resetLevelState(); alert("BŁĄD: Kliknięto zakazany przycisk! Restart poziomu."); }
+            if (currentLevel === 9) {
+                if (!lvl9_active) {
+                    lvl9_active = true;
+                    lvl9_clicks = 1;
+                    lvl9_timer = setTimeout(() => {
+                        if (lvl9_clicks >= 10) { openDoor(); } 
+                        else { alert("Za wolno! Spróbuj ponownie."); lvl9_active = false; lvl9_clicks = 0; }
+                    }, 3000);
+                } else {
+                    lvl9_clicks++;
+                    if (lvl9_clicks >= 10 && lvl9_timer) { openDoor(); clearTimeout(lvl9_timer); }
+                }
             }
         });
 
         doorEl.addEventListener("click", () => {
-            if (currentLevel === 3 && lvl3_step_on_btn) nextLevel();
-            if (currentLevel === 6) { inputLabel.innerText = "Podaj numer obecnej celi (dwucyfrowo):"; inputModal.style.display = "block"; }
-            if (currentLevel === 10 && doorOpen) { inputLabel.innerText = "Terminal ewakuacyjny. Podaj hasło:"; inputModal.style.display = "block"; }
+            if (currentLevel === 2) {
+                lvl2_door_knocks++;
+                if (lvl2_door_knocks >= 5) openDoor();
+            }
+            if (currentLevel === 5) { inputLabel.innerText = "Terminal celi 05. Podaj klucz dostępu:"; inputModal.style.display = "block"; }
+            if (currentLevel === 10 && lvl10_stage === 2) { inputLabel.innerText = "System ewakuacyjny. Podaj hasło końcowe:"; inputModal.style.display = "block"; }
         });
+
+        function handleColorClick(color) {
+            if (currentLevel === 4) {
+                lvl4_sequence.push(color);
+                const correct = ["red", "green", "blue"];
+                if (lvl4_sequence[lvl4_sequence.length - 1] !== correct[lvl4_sequence.length - 1]) {
+                    lvl4_sequence = [];
+                } else if (lvl4_sequence.length === 3) {
+                    openDoor();
+                }
+            }
+            if (currentLevel === 10 && lvl10_stage === 0) {
+                lvl4_sequence.push(color);
+                const correct = ["red", "green", "blue"];
+                if (lvl4_sequence[lvl4_sequence.length - 1] !== correct[lvl4_sequence.length - 1]) {
+                    lvl4_sequence = [];
+                } else if (lvl4_sequence.length === 3) {
+                    lvl10_stage = 1;
+                    document.querySelectorAll('.color-btn').forEach(b => b.style.display = "none");
+                    taskText.innerText = "Poziom 10: Krok 2: Potrząśnij intensywnie myszką nad ekranem.";
+                    lvl7_shake_score = 0;
+                }
+            }
+        }
+
+        document.getElementById("c-red").addEventListener("click", () => handleColorClick("red"));
+        document.getElementById("c-green").addEventListener("click", () => handleColorClick("green"));
+        document.getElementById("c-blue").addEventListener("click", () => handleColorClick("blue"));
 
         document.querySelectorAll('.wall').forEach((wallObj, index) => {
             wallObj.addEventListener('click', (e) => {
-                const rect = wallObj.getBoundingClientRect();
-                const clickX = e.clientX - rect.left;
-                if (index === 0 && clickX > 300 && clickX < 500) {
-                    if (currentLevel === 8) { wallObj.style.backgroundColor = "var(--escapist-green)"; openDoor(); }
-                    if (currentLevel === 10) { wallObj.style.backgroundColor = "var(--escapist-green)"; doorOpen = true; taskText.innerText = "Terminal w drzwiach aktywny. Kliknij na drzwi."; }
+                if (currentLevel === 3) {
+                    const rect = wallObj.getBoundingClientRect();
+                    const clickX = e.clientX - rect.left;
+                    if (index === 0 && clickX > 300 && clickX < 500) {
+                        wallObj.style.backgroundColor = "var(--escapist-green)";
+                        openDoor();
+                    }
                 }
             });
         });
 
         function checkPassword() {
             const val = passInput.value.trim().toUpperCase();
-            if (currentLevel === 6 && (val === "06" || val === "CELA 06")) { inputModal.style.display = "none"; openDoor(); }
-            else if (currentLevel === 10 && val === "ESCAPE") { inputModal.style.display = "none"; currentLevel = 10; doorOpen = true; nextLevel(); }
-            else { alert("ODMOWA DOSTĘPU."); }
+            if (currentLevel === 5 && val === "VIEW") { inputModal.style.display = "none"; openDoor(); }
+            else if (currentLevel === 10 && val === "ESCAPE" && lvl10_stage === 2) { inputModal.style.display = "none"; openDoor(); nextLevel(); }
+            else { alert("BŁĘDNE HASŁO."); }
         }
 
         function openDoor() { doorOpen = true; doorEl.classList.add("open"); }
@@ -564,36 +639,9 @@
                 if (checkCollision(playerRect, wall)) { playerX = oldX; playerY = oldY; break; }
             }
 
-            const btnRect = { x: 120, y: 220, w: 40, h: 40 };
-            const isStandingOnButton = checkCollision(playerRect, btnRect);
-
-            if (isStandingOnButton) {
-                if (currentLevel === 1) { btnEl.classList.add("pressed"); openDoor(); }
-                if (currentLevel === 3) { btnEl.classList.add("pressed"); openDoor(); lvl3_step_on_btn = true; }
-                if (currentLevel === 4) { btnEl.classList.add("pressed"); closeDoor(); }
-                if (currentLevel === 5) {
-                    btnEl.classList.add("pressed");
-                    if (!lvl5_timer) {
-                        lvl5_timer = setInterval(() => {
-                            lvl5_seconds++;
-                            taskText.innerText = `Ładowanie magnetyczne: ${lvl5_seconds}/3s`;
-                            if (lvl5_seconds >= 3) { openDoor(); clearInterval(lvl5_timer); }
-                        }, 1000);
-                    }
-                }
-                if (currentLevel === 9 && !lvl9_interacted.btn) { lvl9_interacted.btn = true; btnEl.classList.add("pressed"); taskText.innerText = "Punkt 1/2 zaliczony. Teraz zbadaj drzwi."; }
-            } else {
-                if (currentLevel === 3) { btnEl.classList.remove("pressed"); closeDoor(); lvl3_step_on_btn = false; }
-                if (currentLevel === 4) { btnEl.classList.remove("pressed"); openDoor(); }
-                if (currentLevel === 5 && lvl5_timer) {
-                    clearInterval(lvl5_timer); lvl5_timer = null; lvl5_seconds = 0; taskText.innerText = levels[5].task;
-                }
-            }
-
             const doorRect = { x: 720, y: 200, w: 40, h: 80 };
             if (checkCollision(playerRect, doorRect)) {
-                if (currentLevel === 9 && lvl9_interacted.btn) openDoor();
-                if (doorOpen && currentLevel !== 3) nextLevel();
+                if (doorOpen && currentLevel !== 10) nextLevel();
                 else { playerX = oldX; playerY = oldY; }
             }
 
@@ -611,7 +659,7 @@
             if (currentLevel < 10) { currentLevel++; resetLevelState(); }
             else {
                 clearInterval(timerInterval);
-                alert(`GENIALNA UCIECZKA!\nUdało Ci się przechytrzyć system zabezpieczeń VIEW!\nTwój czas końcowy: ${timerDisplay.innerText.split(' ')[1]}`);
+                alert(`GRATULACJE! UKOŃCZYŁEŚ WSZYSTKIE POZIOMY!\nTwój łączny czas: ${timerDisplay.innerText.split(' ')[1]}`);
                 currentLevel = 1; gameTime = 0; switchTrack("menu"); resetLevelState();
                 document.getElementById("main-menu").style.display = "flex";
                 document.getElementById("main-menu").style.opacity = "1";
@@ -622,10 +670,16 @@
         function resetLevelState() {
             playerX = 220; playerY = 220; closeDoor(); btnEl.classList.remove("pressed");
             inputModal.style.display = "none"; passInput.value = "";
-            if (lvl5_timer) { clearInterval(lvl5_timer); lvl5_timer = null; }
-            lvl2_clicks = 0; lvl3_step_on_btn = false; lvl5_seconds = 0; lvl7_clicks = 0; lvl9_interacted = { btn: false, door: false };
+            
+            if (lvl6_timer) { clearInterval(lvl6_timer); lvl6_timer = null; }
+            if (lvl9_timer) { clearTimeout(lvl9_timer); lvl9_timer = null; }
+            
+            lvl2_door_knocks = 0; lvl3_hidden_active = false; lvl4_sequence = [];
+            lvl7_shake_score = 0; lvl9_clicks = 0; lvl9_active = false; lvl10_stage = 0;
 
             document.querySelectorAll('.wall').forEach(w => { w.style.backgroundColor = "var(--wall-brick)"; w.classList.remove('interact-glow'); });
+            document.querySelectorAll('.color-btn').forEach(b => b.style.display = "none");
+            
             lvlDisplay.innerText = `CELA: ${String(currentLevel).padStart(2, '0')}/10`;
             taskText.innerText = levels[currentLevel].task; hintText.innerText = levels[currentLevel].hint;
             levels[currentLevel].init();
